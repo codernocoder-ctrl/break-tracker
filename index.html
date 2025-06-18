@@ -190,8 +190,36 @@
         </div>
 
         <div class="content">
+            <!-- Mode Toggle -->
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                <span style="font-weight: 500;">Mode:</span>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="mode" id="customMode" value="custom" checked>
+                    Custom
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="mode" id="pomodoroMode" value="pomodoro">
+                    Pomodoro
+                </label>
+            </div>
+
+            <!-- Pomodoro Timer UI -->
+            <div id="pomodoroSection" style="display:none; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <span id="pomodoroSessionLabel" style="font-weight: 500; font-size: 18px;">Work</span>
+                        <span id="pomodoroSessionCount" style="margin-left: 10px; color: #4a90e2; font-weight: 500;">Pomodoro 1 of 4</span>
+                    </div>
+                    <button id="pomodoroReset" class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px;">Reset</button>
+                </div>
+                <div style="font-size: 40px; font-weight: bold; color: #4a90e2; text-align: center; margin: 18px 0;" id="pomodoroTimer">25:00</div>
+                <div style="text-align: center; font-size: 22px; letter-spacing: 6px; color: #bbb;">
+                    <span id="pomodoroDots">●○○○</span>
+                </div>
+            </div>
+
             <!-- Break Logging Form -->
-            <div class="form-section">
+            <div class="form-section" id="customSection">
                 <h2>Log a Break</h2>
                 <form id="breakForm">
                     <div class="form-group">
@@ -456,6 +484,111 @@
         function clearAllData() {
             breakTracker.clearAllData();
         }
+
+        // Pomodoro Timer Logic
+        const POMODORO_WORK = 25 * 60; // 25 min
+        const POMODORO_SHORT_BREAK = 5 * 60; // 5 min
+        const POMODORO_LONG_BREAK = 15 * 60; // 15 min
+        const POMODOROS_BEFORE_LONG = 4;
+        let pomodoroState = {
+            mode: 'work', // 'work', 'short', 'long'
+            session: 1,
+            timeLeft: POMODORO_WORK,
+            completed: 0,
+            interval: null,
+            running: false
+        };
+
+        function updatePomodoroUI() {
+            // Session label
+            const label = pomodoroState.mode === 'work' ? 'Work' : (pomodoroState.mode === 'short' ? 'Short Break' : 'Long Break');
+            document.getElementById('pomodoroSessionLabel').textContent = label;
+            // Session count
+            document.getElementById('pomodoroSessionCount').textContent =
+                pomodoroState.mode === 'work' ? `Pomodoro ${pomodoroState.session} of 4` : '';
+            // Timer
+            const min = String(Math.floor(pomodoroState.timeLeft / 60)).padStart(2, '0');
+            const sec = String(pomodoroState.timeLeft % 60).padStart(2, '0');
+            document.getElementById('pomodoroTimer').textContent = `${min}:${sec}`;
+            // Dots
+            let dots = '';
+            for (let i = 1; i <= 4; i++) {
+                dots += i <= pomodoroState.completed ? '●' : '○';
+            }
+            document.getElementById('pomodoroDots').textContent = dots;
+        }
+
+        function startPomodoroTimer() {
+            if (pomodoroState.interval) clearInterval(pomodoroState.interval);
+            pomodoroState.running = true;
+            pomodoroState.interval = setInterval(() => {
+                pomodoroState.timeLeft--;
+                updatePomodoroUI();
+                if (pomodoroState.timeLeft <= 0) {
+                    clearInterval(pomodoroState.interval);
+                    pomodoroState.running = false;
+                    // Auto-cycle
+                    if (pomodoroState.mode === 'work') {
+                        pomodoroState.completed++;
+                        if (pomodoroState.completed % POMODOROS_BEFORE_LONG === 0) {
+                            pomodoroState.mode = 'long';
+                            pomodoroState.timeLeft = POMODORO_LONG_BREAK;
+                        } else {
+                            pomodoroState.mode = 'short';
+                            pomodoroState.timeLeft = POMODORO_SHORT_BREAK;
+                        }
+                    } else {
+                        if (pomodoroState.mode === 'long') {
+                            pomodoroState.completed = 0;
+                            pomodoroState.session = 1;
+                        } else {
+                            pomodoroState.session++;
+                        }
+                        pomodoroState.mode = 'work';
+                        pomodoroState.timeLeft = POMODORO_WORK;
+                    }
+                    updatePomodoroUI();
+                    startPomodoroTimer();
+                }
+            }, 1000);
+        }
+
+        function resetPomodoro() {
+            if (pomodoroState.interval) clearInterval(pomodoroState.interval);
+            pomodoroState = {
+                mode: 'work',
+                session: 1,
+                timeLeft: POMODORO_WORK,
+                completed: 0,
+                interval: null,
+                running: false
+            };
+            updatePomodoroUI();
+            startPomodoroTimer();
+        }
+
+        // Mode toggle logic
+        function setMode(mode) {
+            if (mode === 'pomodoro') {
+                document.getElementById('pomodoroSection').style.display = '';
+                document.getElementById('customSection').style.display = 'none';
+                if (!pomodoroState.running) {
+                    resetPomodoro();
+                }
+            } else {
+                document.getElementById('pomodoroSection').style.display = 'none';
+                document.getElementById('customSection').style.display = '';
+                if (pomodoroState.interval) clearInterval(pomodoroState.interval);
+                pomodoroState.running = false;
+            }
+        }
+
+        document.getElementById('customMode').addEventListener('change', () => setMode('custom'));
+        document.getElementById('pomodoroMode').addEventListener('change', () => setMode('pomodoro'));
+        document.getElementById('pomodoroReset').addEventListener('click', resetPomodoro);
+
+        // Initialize Pomodoro UI
+        updatePomodoroUI();
     </script>
 </body>
 </html> 
