@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Break Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #4a90e2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        select, input, .rating-slider {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .rating-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rating-slider {
+            flex: 1;
+        }
+
+        .rating-value {
+            min-width: 30px;
+            text-align: center;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+
+        .btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: #357abd;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Break Tracker</h1>
+            <p>Track your breaks and refresh ratings</p>
+        </div>
+
+        <div class="content">
+            <!-- Break Logging Form -->
+            <div class="form-section">
+                <h2>Log a Break</h2>
+                <form id="breakForm">
+                    <div class="form-group">
+                        <label for="breakType">Break Type:</label>
+                        <select id="breakType" required>
+                            <option value="">Select break type...</option>
+                            <option value="Walk">Walk</option>
+                            <option value="Nap">Nap</option>
+                            <option value="Screen">Screen</option>
+                            <option value="Social">Social</option>
+                            <option value="Coffee">Coffee</option>
+                            <option value="Music">Music</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duration">Duration (minutes):</label>
+                        <input type="number" id="duration" min="1" max="480" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rating">Refresh Rating (1-10):</label>
+                        <div class="rating-container">
+                            <input type="range" id="rating" class="rating-slider" min="1" max="10" value="5">
+                            <span class="rating-value" id="ratingValue">5</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Log Break</button>
+                </form>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats" id="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalBreaks">0</div>
+                    <div class="stat-label">Total Breaks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgRating">0</div>
+                    <div class="stat-label">Avg Rating</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTime">0</div>
+                    <div class="stat-label">Total Time (min)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="favoriteType">-</div>
+                    <div class="stat-label">Most Used Type</div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="exportToCSV()">Export to CSV</button>
+                <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+            </div>
+
+            <!-- Break Log Viewer -->
+            <div class="table-container">
+                <h2>Break History</h2>
+                <table id="breakTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Break Type</th>
+                            <th>Duration (min)</th>
+                            <th>Rating</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakTableBody">
+                        <tr>
+                            <td colspan="5" class="empty-state">No breaks logged yet. Start by logging your first break!</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structure for break entries
+        class BreakEntry {
+            constructor(type, duration, rating) {
+                this.id = Date.now() + Math.random();
+                this.timestamp = new Date().toISOString();
+                this.type = type;
+                this.duration = parseInt(duration);
+                this.rating = parseInt(rating);
+            }
+        }
+
+        // Break Tracker App
+        class BreakTracker {
+            constructor() {
+                this.entries = this.loadEntries();
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.renderTable();
+                this.updateStats();
+            }
+
+            setupEventListeners() {
+                // Form submission
+                document.getElementById('breakForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.logBreak();
+                });
+
+                // Rating slider
+                document.getElementById('rating').addEventListener('input', (e) => {
+                    document.getElementById('ratingValue').textContent = e.target.value;
+                });
+            }
+
+            logBreak() {
+                const type = document.getElementById('breakType').value;
+                const duration = document.getElementById('duration').value;
+                const rating = document.getElementById('rating').value;
+
+                if (!type || !duration || !rating) {
+                    alert('Please fill in all fields');
+                    return;
+                }
+
+                const entry = new BreakEntry(type, duration, rating);
+                this.entries.unshift(entry); // Add to beginning of array
+                this.saveEntries();
+                this.renderTable();
+                this.updateStats();
+                this.resetForm();
+            }
+
+            resetForm() {
+                document.getElementById('breakForm').reset();
+                document.getElementById('ratingValue').textContent = '5';
+            }
+
+            deleteEntry(id) {
+                if (confirm('Are you sure you want to delete this break entry?')) {
+                    this.entries = this.entries.filter(entry => entry.id !== id);
+                    this.saveEntries();
+                    this.renderTable();
+                    this.updateStats();
+                }
+            }
+
+            renderTable() {
+                const tbody = document.getElementById('breakTableBody');
+                
+                if (this.entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No breaks logged yet. Start by logging your first break!</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = this.entries.map(entry => `
+                    <tr>
+                        <td>${this.formatTimestamp(entry.timestamp)}</td>
+                        <td>${entry.type}</td>
+                        <td>${entry.duration}</td>
+                        <td>${entry.rating}/10</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="breakTracker.deleteEntry(${entry.id})" style="padding: 4px 8px; font-size: 12px;">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            updateStats() {
+                if (this.entries.length === 0) {
+                    document.getElementById('totalBreaks').textContent = '0';
+                    document.getElementById('avgRating').textContent = '0';
+                    document.getElementById('totalTime').textContent = '0';
+                    document.getElementById('favoriteType').textContent = '-';
+                    return;
+                }
+
+                const totalBreaks = this.entries.length;
+                const avgRating = (this.entries.reduce((sum, entry) => sum + entry.rating, 0) / totalBreaks).toFixed(1);
+                const totalTime = this.entries.reduce((sum, entry) => sum + entry.duration, 0);
+                
+                // Find most used break type
+                const typeCounts = {};
+                this.entries.forEach(entry => {
+                    typeCounts[entry.type] = (typeCounts[entry.type] || 0) + 1;
+                });
+                const favoriteType = Object.keys(typeCounts).reduce((a, b) => 
+                    typeCounts[a] > typeCounts[b] ? a : b
+                );
+
+                document.getElementById('totalBreaks').textContent = totalBreaks;
+                document.getElementById('avgRating').textContent = avgRating;
+                document.getElementById('totalTime').textContent = totalTime;
+                document.getElementById('favoriteType').textContent = favoriteType;
+            }
+
+            formatTimestamp(timestamp) {
+                const date = new Date(timestamp);
+                return date.toLocaleString();
+            }
+
+            loadEntries() {
+                const stored = localStorage.getItem('breakEntries');
+                return stored ? JSON.parse(stored) : [];
+            }
+
+            saveEntries() {
+                localStorage.setItem('breakEntries', JSON.stringify(this.entries));
+            }
+
+            exportToCSV() {
+                if (this.entries.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+
+                const headers = ['Timestamp', 'Break Type', 'Duration (min)', 'Rating'];
+                const csvContent = [
+                    headers.join(','),
+                    ...this.entries.map(entry => [
+                        this.formatTimestamp(entry.timestamp),
+                        entry.type,
+                        entry.duration,
+                        entry.rating
+                    ].join(','))
+                ].join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `break-tracker-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }
+
+            clearAllData() {
+                if (confirm('Are you sure you want to clear all break data? This cannot be undone.')) {
+                    this.entries = [];
+                    this.saveEntries();
+                    this.renderTable();
+                    this.updateStats();
+                }
+            }
+        }
+
+        // Initialize the app
+        const breakTracker = new BreakTracker();
+
+        // Global functions for button clicks
+        function exportToCSV() {
+            breakTracker.exportToCSV();
+        }
+
+        function clearAllData() {
+            breakTracker.clearAllData();
+        }
+    </script>
+</body>
+</html> 
